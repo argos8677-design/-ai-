@@ -17,8 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import shortImg from "@/assets/scooter-short.jpg";
-import longImg from "@/assets/scooter-long.jpg";
+import evC1ChainImg from "@/assets/ev-c1-chain.png";
 import { BlogView, ShortsView, SnsView } from "@/components/result-views";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -675,7 +674,7 @@ function Checkmark({ on }: { on: boolean }) {
 }
 
 function ProductCard({ p, active, onClick }: { p: Product; active: boolean; onClick: () => void }) {
-  const img = p.image_url ?? (p.rent_type === "short" ? shortImg : longImg);
+  const img = p.image_url ?? evC1ChainImg;
   return (
     <button onClick={onClick} aria-pressed={active} className={`relative overflow-hidden rounded-2xl border-2 text-left transition ${active ? "border-primary shadow-lift" : "border-border hover:border-primary/50"}`}>
       <div className="relative bg-muted">
