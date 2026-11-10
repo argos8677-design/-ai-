@@ -6,10 +6,27 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+/** Set GITHUB_PAGES=true in CI to emit static HTML for GitHub Pages (/-ai-/ base). */
+const ghPages = process.env.GITHUB_PAGES === "true";
+
 export default defineConfig({
+  vite: {
+    base: ghPages ? "/-ai-/" : "/",
+  },
+  ...(ghPages ? { nitro: false } : {}),
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+    ...(ghPages
+      ? {
+          prerender: {
+            enabled: true,
+            failOnError: false,
+            filter: ({ path }: { path: string }) =>
+              path === "/" || path === "/guide",
+          },
+        }
+      : {}),
   },
 });
