@@ -17,17 +17,21 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   createAdminProduct,
-  listAdminProducts,
   setAdminProductActive,
   updateAdminProduct,
   type AdminProduct,
 } from "@/lib/products-admin.functions";
+import { fetchAdminProductsForApp } from "@/lib/fetch-admin-products";
 import { formatWon, rentTypeLabel } from "@/lib/marketing";
 
 const adminProductsQuery = queryOptions({
   queryKey: ["admin-products"],
-  queryFn: () => listAdminProducts(),
+  queryFn: () => fetchAdminProductsForApp(),
 });
+
+function isGitHubPagesPreview() {
+  return import.meta.env.VITE_GITHUB_PAGES === "true";
+}
 
 export const Route = createFileRoute("/admin/products")({
   head: () => ({
@@ -140,18 +144,27 @@ function AdminProductsPage() {
   }
 
   function openCreate() {
+    if (isGitHubPagesPreview()) {
+      toast.message("GitHub Pages에서는 조회만 가능합니다. 등록·수정은 Supabase Table Editor 또는 Lovable 미리보기에서 해 주세요.");
+      return;
+    }
     setEditing(null);
     setForm(emptyForm());
     setDialogOpen(true);
   }
 
   function openEdit(p: AdminProduct) {
+    if (isGitHubPagesPreview()) {
+      toast.message("GitHub Pages에서는 조회만 가능합니다. 수정은 Lovable Cloud 미리보기 또는 Supabase 대시보드에서 해 주세요.");
+      return;
+    }
     setEditing(p);
     setForm(productToForm(p));
     setDialogOpen(true);
   }
 
   async function save() {
+    if (isGitHubPagesPreview()) return;
     setSaving(true);
     try {
       const payload = formToPayload(form);
@@ -172,6 +185,10 @@ function AdminProductsPage() {
   }
 
   async function toggleActive(p: AdminProduct) {
+    if (isGitHubPagesPreview()) {
+      toast.message("GitHub Pages에서는 상태 변경을 할 수 없습니다.");
+      return;
+    }
     try {
       await activeFn({ data: { id: p.id, is_active: !p.is_active } });
       toast.success(p.is_active ? "상품을 비활성화했습니다." : "상품을 다시 활성화했습니다.");
@@ -193,10 +210,24 @@ function AdminProductsPage() {
               {products.length}건)
             </p>
           </div>
-          <Button onClick={openCreate} className="rounded-xl bg-primary font-bold text-primary-foreground shadow-lift">
+          <Button
+            onClick={openCreate}
+            className="rounded-xl bg-primary font-bold text-primary-foreground shadow-lift"
+            disabled={isGitHubPagesPreview()}
+          >
             <Plus className="size-4" /> 새 상품 등록
           </Button>
         </div>
+
+        {isGitHubPagesPreview() && (
+          <div className="mt-4 flex items-start gap-2 rounded-xl border border-primary/30 bg-accent px-4 py-3 text-sm text-accent-foreground">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-primary-deep" />
+            <p>
+              GitHub Pages 미리보기입니다. <strong>활성 상품 목록만 조회</strong>됩니다. 등록·수정·비활성화는{" "}
+              <strong>Supabase Table Editor</strong> 또는 <strong>Lovable Cloud</strong> `/admin/products`에서 이용해 주세요.
+            </p>
+          </div>
+        )}
 
         <div className="mt-8 overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
           <div className="overflow-x-auto">
@@ -237,13 +268,20 @@ function AdminProductsPage() {
                     <td className="px-4 py-4">{p.sort_order}</td>
                     <td className="px-4 py-4">
                       <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" className="rounded-lg" onClick={() => openEdit(p)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg"
+                          disabled={isGitHubPagesPreview()}
+                          onClick={() => openEdit(p)}
+                        >
                           <Pencil className="size-3.5" /> 수정
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="rounded-lg"
+                          disabled={isGitHubPagesPreview()}
                           onClick={() => toggleActive(p)}
                         >
                           {p.is_active ? (
