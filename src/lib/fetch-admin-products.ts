@@ -1,7 +1,8 @@
+import { isGitHubPagesPreview } from "./is-github-pages";
 import type { AdminProduct } from "./products-admin.functions";
 
 export async function fetchAdminProductsForApp(): Promise<AdminProduct[]> {
-  if (import.meta.env.VITE_GITHUB_PAGES === "true" && typeof window !== "undefined") {
+  if (isGitHubPagesPreview()) {
     const { listAdminProductsInBrowser } = await import("./products-admin-browser");
     return listAdminProductsInBrowser();
   }

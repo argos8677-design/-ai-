@@ -54,12 +54,9 @@ import {
 } from "@/lib/marketing.functions";
 import { fetchProductsForApp } from "@/lib/fetch-products";
 import { generateContentInBrowser, regenerateChannelInBrowser } from "@/lib/generate-content-browser";
+import { isGitHubPagesPreview } from "@/lib/is-github-pages";
 
 const productsQuery = queryOptions({ queryKey: ["products"], queryFn: () => fetchProductsForApp() });
-
-function isGitHubPagesPreview() {
-  return import.meta.env.VITE_GITHUB_PAGES === "true";
-}
 
 export const Route = createFileRoute("/generate")({
   head: () => ({

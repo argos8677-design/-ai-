@@ -22,6 +22,7 @@ import {
   type AdminProduct,
 } from "@/lib/products-admin.functions";
 import { fetchAdminProductsForApp } from "@/lib/fetch-admin-products";
+import { isGitHubPagesPreview } from "@/lib/is-github-pages";
 import { formatWon, rentTypeLabel } from "@/lib/marketing";
 
 const adminProductsQuery = queryOptions({
@@ -29,8 +30,12 @@ const adminProductsQuery = queryOptions({
   queryFn: () => fetchAdminProductsForApp(),
 });
 
-function isGitHubPagesPreview() {
-  return import.meta.env.VITE_GITHUB_PAGES === "true";
+function formatRouteError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("<!DOCTYPE") || message.includes("<html")) {
+    return "페이지를 불러오지 못했습니다. GitHub Pages에서는 메뉴에서 「상품 관리」로 들어오거나, 배포가 완료된 뒤 새로고침해 주세요.";
+  }
+  return message;
 }
 
 export const Route = createFileRoute("/admin/products")({
@@ -40,13 +45,12 @@ export const Route = createFileRoute("/admin/products")({
       { name: "description", content: "바이크뱅크 렌트 상품 등록·수정·비활성화" },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(adminProductsQuery),
   component: AdminProductsPage,
   errorComponent: ({ error }) => (
     <div className="mx-auto max-w-lg px-4 py-24 text-center">
       <AlertTriangle className="mx-auto size-10 text-destructive" />
       <h1 className="mt-4 text-xl font-bold">상품 관리를 불러오지 못했습니다</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{(error as Error).message}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{formatRouteError(error)}</p>
       <Link to="/generate" className="mt-6 inline-block text-sm font-semibold text-primary underline">
         AI 소재 생성으로 돌아가기
       </Link>

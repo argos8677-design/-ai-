@@ -1,3 +1,4 @@
+import { isGitHubPagesPreview } from "./is-github-pages";
 import type { Product } from "./marketing";
 import { createBrowserSupabase } from "./supabase-browser";
 
@@ -27,10 +28,7 @@ async function listActiveProductsInBrowser(): Promise<Product[]> {
 }
 
 export async function fetchProductsForApp(): Promise<Product[]> {
-  const useBrowserSupabase =
-    import.meta.env.VITE_GITHUB_PAGES === "true" && typeof window !== "undefined";
-
-  if (useBrowserSupabase) {
+  if (isGitHubPagesPreview()) {
     return listActiveProductsInBrowser();
   }
 

@@ -29,10 +29,8 @@ jobs:
           GITHUB_PAGES: "true"
           VITE_GITHUB_PAGES: "true"
           # Do not set empty VITE_* here — it overrides committed .env.production and breaks the client bundle.
-      - name: Add GitHub Pages helpers
-        run: |
-          touch dist/client/.nojekyll
-          cp dist/client/index.html dist/client/404.html
+      - name: Add GitHub Pages SPA helpers
+        run: bun scripts/github-pages-postbuild.mjs
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist/client
