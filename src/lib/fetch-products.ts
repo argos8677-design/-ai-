@@ -31,6 +31,11 @@ async function listActiveProductsInBrowser(): Promise<Product[]> {
 
   if (error) {
     console.error("[listActiveProductsInBrowser]", error.message, error.code);
+    if (error.code === "PGRST205") {
+      throw new Error(
+        "Supabase 프로젝트에 products 테이블이 없습니다. 대시보드 SQL Editor에서 supabase/migrations/20260306100000_marketing_schema.sql 파일 내용을 실행해 주세요.",
+      );
+    }
     throw new Error("상품 정보를 불러오지 못했습니다.");
   }
 

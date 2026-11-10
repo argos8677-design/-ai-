@@ -28,12 +28,7 @@ jobs:
         env:
           GITHUB_PAGES: "true"
           VITE_GITHUB_PAGES: "true"
-          # Optional overrides; defaults live in committed .env.production (publishable keys only).
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_SUPABASE_PROJECT_ID: ${{ vars.VITE_SUPABASE_PROJECT_ID }}
-          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          # Do not set empty VITE_* here — it overrides committed .env.production and breaks the client bundle.
       - name: Add GitHub Pages helpers
         run: |
           touch dist/client/.nojekyll
