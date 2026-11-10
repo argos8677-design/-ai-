@@ -27,7 +27,8 @@ jobs:
         run: bun run build
         env:
           GITHUB_PAGES: "true"
-          # Publishable values only; secrets are not available on GitHub Pages static hosting.
+          VITE_GITHUB_PAGES: "true"
+          # Optional overrides; defaults live in committed .env.production (publishable keys only).
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_PROJECT_ID: ${{ vars.VITE_SUPABASE_PROJECT_ID }}

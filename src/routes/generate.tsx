@@ -48,13 +48,13 @@ import {
   generateContent,
   getHistory,
   listHistory,
-  listProducts,
   rateHistory,
   regenerateChannel,
   regenerateChannelInline,
 } from "@/lib/marketing.functions";
+import { fetchProductsForApp } from "@/lib/fetch-products";
 
-const productsQuery = queryOptions({ queryKey: ["products"], queryFn: () => listProducts() });
+const productsQuery = queryOptions({ queryKey: ["products"], queryFn: () => fetchProductsForApp() });
 
 export const Route = createFileRoute("/generate")({
   head: () => ({
