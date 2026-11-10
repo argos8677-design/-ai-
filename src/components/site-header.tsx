@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, Sparkles, X, Zap } from "lucide-react";
+import { Menu, Sparkles, X } from "lucide-react";
 import { useState } from "react";
+import bikeBankLogo from "@/assets/bike-bank-logo.png";
 
 const NAV = [
   { to: "/", label: "서비스 소개" },
@@ -11,12 +12,17 @@ const NAV = [
 
 export function Logo() {
   return (
-    <Link to="/" className="flex items-center gap-2 font-extrabold tracking-tight">
-      <span className="grid size-8 place-items-center rounded-lg bg-ink text-primary">
-        <Zap className="size-4 fill-current" />
-      </span>
-      <span className="text-[15px]">
-        BIKEBANK <span className="rounded bg-primary px-1.5 py-0.5 text-xs text-primary-foreground">AI</span>
+    <Link to="/" className="flex items-center gap-2.5">
+      <img
+        src={bikeBankLogo}
+        alt="BIKE BANK"
+        className="h-8 w-auto max-w-[9.5rem] object-contain object-left sm:h-9 sm:max-w-[11rem]"
+        width={176}
+        height={36}
+        decoding="async"
+      />
+      <span className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-primary-foreground sm:text-xs">
+        AI
       </span>
     </Link>
   );
@@ -77,11 +83,18 @@ export function SiteFooter() {
     <footer className="bg-ink text-ink-foreground">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 sm:px-6 md:flex-row md:items-end md:justify-between">
         <div>
-          <div className="flex items-center gap-2 font-extrabold">
-            <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <Zap className="size-4 fill-current" />
-            </span>
-            BIKEBANK AI MARKETING
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="rounded-lg bg-white px-3 py-1.5">
+              <img
+                src={bikeBankLogo}
+                alt="BIKE BANK"
+                className="h-7 w-auto max-w-[9rem] object-contain object-left"
+                width={152}
+                height={28}
+                decoding="async"
+              />
+            </div>
+            <span className="text-sm font-bold tracking-tight text-ink-foreground/90">AI MARKETING</span>
           </div>
           <p className="mt-3 max-w-md text-sm text-ink-foreground/60">
             렌트 상품만 선택하세요. 마케팅은 AI가 완성합니다.
