@@ -152,9 +152,14 @@ function AdminProductsPage() {
   useEffect(() => {
     if (!ghPages) return;
     let cancelled = false;
-    getAdminBrowserSession().then((s) => {
-      if (!cancelled) setAdminSession(s);
-    });
+    getAdminBrowserSession()
+      .then((s) => {
+        if (!cancelled) setAdminSession(s);
+      })
+      .catch((e) => {
+        console.error("[admin/products] session check failed", e);
+        if (!cancelled) setAdminSession(null);
+      });
     const unsub = subscribeAdminAuth((s) => {
       if (!cancelled) setAdminSession(s);
     });
@@ -264,7 +269,7 @@ function AdminProductsPage() {
           </Button>
         </div>
 
-        {ghPages && adminSession !== undefined && (
+        {ghPages && (
           <div className="mt-4 space-y-3">
             {!ghPagesWrite && (
               <div className="flex items-start gap-2 rounded-xl border border-primary/30 bg-accent px-4 py-3 text-sm text-accent-foreground">
@@ -276,7 +281,7 @@ function AdminProductsPage() {
               </div>
             )}
             <AdminSupabaseLogin
-              session={adminSession}
+              session={adminSession ?? null}
               onSessionChange={setAdminSession}
               onSignedIn={() => void refresh()}
             />
