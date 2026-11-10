@@ -1,9 +1,9 @@
 import { createBrowserSupabase } from "./supabase-browser";
 import type { AdminProduct } from "./products-admin.functions";
 
-/** GitHub Pages: read-only product list via publishable key (RLS may hide inactive rows). */
+/** GitHub Pages: product list via publishable key (inactive rows visible after admin sign-in). */
 export async function listAdminProductsInBrowser(): Promise<AdminProduct[]> {
-  const sb = createBrowserSupabase();
+  const sb = createBrowserSupabase({ persistAuth: true });
   const { data, error } = await sb
     .from("products")
     .select("*")

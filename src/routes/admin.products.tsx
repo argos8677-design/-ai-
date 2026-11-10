@@ -2,7 +2,9 @@ import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from "@ta
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { AlertTriangle, Package, Pencil, Plus, Power, PowerOff } from "lucide-react";
-import { useMemo, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { useEffect, useMemo, useState } from "react";
+import { AdminSupabaseLogin } from "@/components/admin-supabase-login";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +24,13 @@ import {
   type AdminProduct,
 } from "@/lib/products-admin.functions";
 import { fetchAdminProductsForApp } from "@/lib/fetch-admin-products";
+import {
+  createAdminProductInBrowser,
+  getAdminBrowserSession,
+  setAdminProductActiveInBrowser,
+  subscribeAdminAuth,
+  updateAdminProductInBrowser,
+} from "@/lib/products-admin-auth-browser";
 import { isGitHubPagesPreview } from "@/lib/is-github-pages";
 import { formatWon, rentTypeLabel } from "@/lib/marketing";
 
@@ -135,6 +144,26 @@ function AdminProductsPage() {
   const updateFn = useServerFn(updateAdminProduct);
   const activeFn = useServerFn(setAdminProductActive);
 
+  const ghPages = isGitHubPagesPreview();
+  const [adminSession, setAdminSession] = useState<Session | null | undefined>(ghPages ? undefined : null);
+  const ghPagesWrite = ghPages && !!adminSession;
+  const ghPagesReadOnly = ghPages && !adminSession;
+
+  useEffect(() => {
+    if (!ghPages) return;
+    let cancelled = false;
+    getAdminBrowserSession().then((s) => {
+      if (!cancelled) setAdminSession(s);
+    });
+    const unsub = subscribeAdminAuth((s) => {
+      if (!cancelled) setAdminSession(s);
+    });
+    return () => {
+      cancelled = true;
+      unsub();
+    };
+  }, [ghPages]);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<AdminProduct | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -148,8 +177,8 @@ function AdminProductsPage() {
   }
 
   function openCreate() {
-    if (isGitHubPagesPreview()) {
-      toast.message("GitHub Pages에서는 조회만 가능합니다. 등록·수정은 Supabase Table Editor 또는 Lovable 미리보기에서 해 주세요.");
+    if (ghPagesReadOnly) {
+      toast.message("먼저 Supabase 관리자로 로그인해 주세요.");
       return;
     }
     setEditing(null);
@@ -158,8 +187,8 @@ function AdminProductsPage() {
   }
 
   function openEdit(p: AdminProduct) {
-    if (isGitHubPagesPreview()) {
-      toast.message("GitHub Pages에서는 조회만 가능합니다. 수정은 Lovable Cloud 미리보기 또는 Supabase 대시보드에서 해 주세요.");
+    if (ghPagesReadOnly) {
+      toast.message("먼저 Supabase 관리자로 로그인해 주세요.");
       return;
     }
     setEditing(p);
@@ -168,11 +197,19 @@ function AdminProductsPage() {
   }
 
   async function save() {
-    if (isGitHubPagesPreview()) return;
+    if (ghPages && !ghPagesWrite) return;
     setSaving(true);
     try {
       const payload = formToPayload(form);
-      if (editing) {
+      if (ghPagesWrite) {
+        if (editing) {
+          await updateAdminProductInBrowser(adminSession, editing.id, payload);
+          toast.success("상품이 수정되었습니다.");
+        } else {
+          await createAdminProductInBrowser(adminSession, payload);
+          toast.success("상품이 등록되었습니다.");
+        }
+      } else if (editing) {
         await updateFn({ data: { id: editing.id, ...payload } });
         toast.success("상품이 수정되었습니다.");
       } else {
@@ -189,12 +226,16 @@ function AdminProductsPage() {
   }
 
   async function toggleActive(p: AdminProduct) {
-    if (isGitHubPagesPreview()) {
-      toast.message("GitHub Pages에서는 상태 변경을 할 수 없습니다.");
+    if (ghPagesReadOnly) {
+      toast.message("먼저 Supabase 관리자로 로그인해 주세요.");
       return;
     }
     try {
-      await activeFn({ data: { id: p.id, is_active: !p.is_active } });
+      if (ghPagesWrite) {
+        await setAdminProductActiveInBrowser(adminSession, p.id, !p.is_active);
+      } else {
+        await activeFn({ data: { id: p.id, is_active: !p.is_active } });
+      }
       toast.success(p.is_active ? "상품을 비활성화했습니다." : "상품을 다시 활성화했습니다.");
       await refresh();
     } catch (e) {
@@ -217,19 +258,28 @@ function AdminProductsPage() {
           <Button
             onClick={openCreate}
             className="rounded-xl bg-primary font-bold text-primary-foreground shadow-lift"
-            disabled={isGitHubPagesPreview()}
+            disabled={ghPagesReadOnly}
           >
             <Plus className="size-4" /> 새 상품 등록
           </Button>
         </div>
 
-        {isGitHubPagesPreview() && (
-          <div className="mt-4 flex items-start gap-2 rounded-xl border border-primary/30 bg-accent px-4 py-3 text-sm text-accent-foreground">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-primary-deep" />
-            <p>
-              GitHub Pages 미리보기입니다. <strong>활성 상품 목록만 조회</strong>됩니다. 등록·수정·비활성화는{" "}
-              <strong>Supabase Table Editor</strong> 또는 <strong>Lovable Cloud</strong> `/admin/products`에서 이용해 주세요.
-            </p>
+        {ghPages && adminSession !== undefined && (
+          <div className="mt-4 space-y-3">
+            {!ghPagesWrite && (
+              <div className="flex items-start gap-2 rounded-xl border border-primary/30 bg-accent px-4 py-3 text-sm text-accent-foreground">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-primary-deep" />
+                <p>
+                  GitHub Pages 미리보기입니다. 로그인 전에는 <strong>활성 상품만</strong> 보입니다. 아래에서 Supabase
+                  관리자로 로그인하면 등록·수정·비활성화가 가능합니다.
+                </p>
+              </div>
+            )}
+            <AdminSupabaseLogin
+              session={adminSession}
+              onSessionChange={setAdminSession}
+              onSignedIn={() => void refresh()}
+            />
           </div>
         )}
 
@@ -276,7 +326,7 @@ function AdminProductsPage() {
                           variant="outline"
                           size="sm"
                           className="rounded-lg"
-                          disabled={isGitHubPagesPreview()}
+                          disabled={ghPagesReadOnly}
                           onClick={() => openEdit(p)}
                         >
                           <Pencil className="size-3.5" /> 수정
@@ -285,7 +335,7 @@ function AdminProductsPage() {
                           variant="outline"
                           size="sm"
                           className="rounded-lg"
-                          disabled={isGitHubPagesPreview()}
+                          disabled={ghPagesReadOnly}
                           onClick={() => toggleActive(p)}
                         >
                           {p.is_active ? (

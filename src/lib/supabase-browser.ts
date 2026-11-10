@@ -2,7 +2,12 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import type { Product } from "./marketing";
 
-export function createBrowserSupabase() {
+export type BrowserSupabaseOptions = {
+  /** Keep session in localStorage — use on /admin/products (GitHub Pages CRUD via RLS). */
+  persistAuth?: boolean;
+};
+
+export function createBrowserSupabase(options?: BrowserSupabaseOptions) {
   const url = import.meta.env.VITE_SUPABASE_URL?.trim();
   const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
   if (!url || !key) {
@@ -11,8 +16,12 @@ export function createBrowserSupabase() {
     );
   }
 
+  const persistAuth = options?.persistAuth === true;
+
   return createClient<Database>(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
+    auth: persistAuth
+      ? { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      : { persistSession: false, autoRefreshToken: false, storage: undefined },
     global: {
       fetch: (input, init) => {
         const h = new Headers(init?.headers);
