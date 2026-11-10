@@ -52,7 +52,8 @@ export function AdminSupabaseLogin({ session, onSessionChange, onSignedIn }: Pro
     return (
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/25 bg-card px-4 py-3 text-sm">
         <p>
-          Supabase 관리자로 로그인됨 <span className="text-muted-foreground">({session.user.email})</span>
+          관리자 로그인됨 <span className="text-muted-foreground">({session.user.email})</span> · 상품 등록·수정·비활성화
+          가능
         </p>
         <Button type="button" variant="outline" size="sm" className="rounded-lg" disabled={busy} onClick={logout}>
           <LogOut className="size-3.5" /> 로그아웃
@@ -63,12 +64,9 @@ export function AdminSupabaseLogin({ session, onSessionChange, onSignedIn }: Pro
 
   return (
     <div className="rounded-xl border border-primary/30 bg-card px-4 py-4">
-      <p className="text-sm font-semibold">Supabase 관리자 로그인</p>
+      <p className="text-sm font-semibold">관리자 로그인</p>
       <p className="mt-1 text-xs text-muted-foreground">
-        GitHub Pages에서는 서버가 없어 Supabase Authentication 계정으로 등록·수정합니다. 대시보드 → Authentication →
-        Users에서 관리자를 만든 뒤, SQL Editor에서{" "}
-        <code className="rounded bg-muted px-1">20260310150000_products_authenticated_admin_rls.sql</code> 마이그레이션을
-        실행해 주세요.
+        등록·수정·비활성화를 하려면 Supabase에 등록된 계정으로 로그인해 주세요. (로그인 전에는 활성 상품만 보입니다.)
       </p>
       <form className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={submit}>
         <div className="grid flex-1 gap-1.5">

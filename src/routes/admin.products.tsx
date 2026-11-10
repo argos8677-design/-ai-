@@ -271,15 +271,6 @@ function AdminProductsPage() {
 
         {ghPages && (
           <div className="mt-4 space-y-3">
-            {!ghPagesWrite && (
-              <div className="flex items-start gap-2 rounded-xl border border-primary/30 bg-accent px-4 py-3 text-sm text-accent-foreground">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-primary-deep" />
-                <p>
-                  GitHub Pages 미리보기입니다. 로그인 전에는 <strong>활성 상품만</strong> 보입니다. 아래에서 Supabase
-                  관리자로 로그인하면 등록·수정·비활성화가 가능합니다.
-                </p>
-              </div>
-            )}
             <AdminSupabaseLogin
               session={adminSession ?? null}
               onSessionChange={setAdminSession}
