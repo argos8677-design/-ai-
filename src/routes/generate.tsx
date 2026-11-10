@@ -54,6 +54,14 @@ import {
 } from "@/lib/marketing.functions";
 import { fetchProductsForApp } from "@/lib/fetch-products";
 import { generateContentInBrowser, regenerateChannelInBrowser } from "@/lib/generate-content-browser";
+import {
+  deleteHistoryViaEdge,
+  generateContentViaEdge,
+  getHistoryViaEdge,
+  listHistoryViaEdge,
+  rateHistoryViaEdge,
+  regenerateChannelViaEdge,
+} from "@/lib/marketing-edge";
 import { isGitHubPagesPreview } from "@/lib/is-github-pages";
 
 const productsQuery = queryOptions({ queryKey: ["products"], queryFn: () => fetchProductsForApp() });
@@ -186,7 +194,27 @@ function GeneratePage() {
     setError(null);
     try {
       const r = isGitHubPagesPreview()
-        ? await generateContentInBrowser({ productId, targets, channels, purposes, extra, shortsDuration: duration })
+        ? await (async () => {
+            try {
+              return await generateContentViaEdge({
+                clientId,
+                productId,
+                targets,
+                channels,
+                purposes,
+                extra,
+                shortsDuration: duration,
+              });
+            } catch (e) {
+              console.error("[generate] edge fallback", e);
+              toast.warning(
+                e instanceof Error
+                  ? e.message
+                  : "Edge Function을 사용할 수 없어 데모 콘텐츠로 생성합니다. Supabase에 marketing 함수를 배포해 주세요.",
+              );
+              return generateContentInBrowser({ productId, targets, channels, purposes, extra, shortsDuration: duration });
+            }
+          })()
         : await generateFn({ data: { clientId, productId, targets, channels, purposes, extra, shortsDuration: duration } });
       setGen({
         ...r,
@@ -214,15 +242,23 @@ function GeneratePage() {
     try {
       const previous = gen.results[tab];
       const r = gen.historySaved
-        ? await regenFn({
-            data: {
+        ? isGitHubPagesPreview()
+          ? await regenerateChannelViaEdge({
               clientId,
               historyId: gen.historyId,
               channel: tab,
               revision,
               shortsDuration: duration,
-            },
-          })
+            })
+          : await regenFn({
+              data: {
+                clientId,
+                historyId: gen.historyId,
+                channel: tab,
+                revision,
+                shortsDuration: duration,
+              },
+            })
         : isGitHubPagesPreview()
           ? await regenerateChannelInBrowser({
               productId,
@@ -260,16 +296,16 @@ function GeneratePage() {
 
   async function openHistory() {
     if (!clientId) return;
-    if (isGitHubPagesPreview()) {
-      toast.message("GitHub Pages 미리보기에서는 생성 이력을 저장·조회할 수 없습니다. Lovable Cloud 미리보기를 이용해 주세요.");
-      return;
-    }
     setHistOpen(true);
     setHistLoading(true);
     try {
-      setHistory(await historyFn({ data: { clientId } }));
-    } catch {
-      toast.error("이력을 불러오지 못했습니다.");
+      if (isGitHubPagesPreview()) {
+        setHistory(await listHistoryViaEdge(clientId));
+      } else {
+        setHistory(await historyFn({ data: { clientId } }));
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "이력을 불러오지 못했습니다.");
     } finally {
       setHistLoading(false);
     }
@@ -278,7 +314,9 @@ function GeneratePage() {
   async function loadHistory(id: string) {
     if (!clientId) return;
     try {
-      const h = await getFn({ data: { clientId, historyId: id } });
+      const h = isGitHubPagesPreview()
+        ? await getHistoryViaEdge(clientId, id)
+        : await getFn({ data: { clientId, historyId: id } });
       if (h.productId) setProductId(h.productId);
       setTargets(h.targets as TargetId[]);
       setChannels(h.channels);
@@ -308,7 +346,11 @@ function GeneratePage() {
 
   async function removeHistory(id: string) {
     if (!clientId) return;
-    await delFn({ data: { clientId, historyId: id } });
+    if (isGitHubPagesPreview()) {
+      await deleteHistoryViaEdge(clientId, id);
+    } else {
+      await delFn({ data: { clientId, historyId: id } });
+    }
     setHistory((h) => h.filter((x) => x.id !== id));
     if (gen?.historyId === id) setGen(null);
     toast.success("삭제되었습니다.");
@@ -318,10 +360,14 @@ function GeneratePage() {
     if (!gen || !clientId) return;
     setGen({ ...gen, rating: n });
     if (!gen.historySaved) {
-      toast.message("만족도는 이 세션에만 표시됩니다. Lovable Cloud에 저장된 이력에서만 평가가 기록됩니다.");
+      toast.message("만족도는 이 세션에만 표시됩니다. 저장된 이력에서만 평가가 기록됩니다.");
       return;
     }
-    await rateFn({ data: { clientId, historyId: gen.historyId, rating: n } });
+    if (isGitHubPagesPreview()) {
+      await rateHistoryViaEdge(clientId, gen.historyId, n);
+    } else {
+      await rateFn({ data: { clientId, historyId: gen.historyId, rating: n } });
+    }
     toast.success("만족도 평가가 저장되었습니다. 감사합니다!");
   }
 
@@ -345,8 +391,8 @@ function GeneratePage() {
           <div className="mt-4 flex items-start gap-2 rounded-xl border border-primary/30 bg-accent px-4 py-3 text-sm text-accent-foreground">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-primary-deep" />
             <p>
-              GitHub Pages 미리보기입니다. 등록된 상품 정보로 <strong>데모 콘텐츠</strong>를 생성합니다. 실제 AI 생성·이력 저장은{" "}
-              <strong>Lovable Cloud</strong> 미리보기에서 이용해 주세요.
+              GitHub Pages에서 <strong>Supabase Edge Function(marketing)</strong>으로 AI 생성·이력 저장을 사용합니다. Edge
+              미배포·AI 키 미설정 시 <strong>데모 콘텐츠</strong>로 대체됩니다.
             </p>
           </div>
         )}

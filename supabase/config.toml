@@ -1,1 +1,4 @@
 project_id = "asrelvaiylfkusztubtb"
+
+[functions.marketing]
+verify_jwt = true
