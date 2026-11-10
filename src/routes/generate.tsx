@@ -53,8 +53,13 @@ import {
   regenerateChannelInline,
 } from "@/lib/marketing.functions";
 import { fetchProductsForApp } from "@/lib/fetch-products";
+import { generateContentInBrowser, regenerateChannelInBrowser } from "@/lib/generate-content-browser";
 
 const productsQuery = queryOptions({ queryKey: ["products"], queryFn: () => fetchProductsForApp() });
+
+function isGitHubPagesPreview() {
+  return import.meta.env.VITE_GITHUB_PAGES === "true";
+}
 
 export const Route = createFileRoute("/generate")({
   head: () => ({
@@ -183,7 +188,9 @@ function GeneratePage() {
     setLoading(true);
     setError(null);
     try {
-      const r = await generateFn({ data: { clientId, productId, targets, channels, purposes, extra, shortsDuration: duration } });
+      const r = isGitHubPagesPreview()
+        ? await generateContentInBrowser({ productId, targets, channels, purposes, extra, shortsDuration: duration })
+        : await generateFn({ data: { clientId, productId, targets, channels, purposes, extra, shortsDuration: duration } });
       setGen({
         ...r,
         historySaved: r.historySaved,
@@ -219,18 +226,27 @@ function GeneratePage() {
               shortsDuration: duration,
             },
           })
-        : await regenInlineFn({
-            data: {
+        : isGitHubPagesPreview()
+          ? await regenerateChannelInBrowser({
               productId,
               targets,
               purposes,
               extra,
               shortsDuration: duration,
               channel: tab,
-              revision,
-              ...(revision && previous ? { previous } : {}),
-            },
-          });
+            })
+          : await regenInlineFn({
+              data: {
+                productId,
+                targets,
+                purposes,
+                extra,
+                shortsDuration: duration,
+                channel: tab,
+                revision,
+                ...(revision && previous ? { previous } : {}),
+              },
+            });
       setGen({
         ...gen,
         results: { ...gen.results, [tab]: r.content },
@@ -247,6 +263,10 @@ function GeneratePage() {
 
   async function openHistory() {
     if (!clientId) return;
+    if (isGitHubPagesPreview()) {
+      toast.message("GitHub Pages 미리보기에서는 생성 이력을 저장·조회할 수 없습니다. Lovable Cloud 미리보기를 이용해 주세요.");
+      return;
+    }
     setHistOpen(true);
     setHistLoading(true);
     try {
@@ -324,6 +344,15 @@ function GeneratePage() {
             <History className="size-4" /> 생성 이력
           </button>
         </div>
+        {isGitHubPagesPreview() && (
+          <div className="mt-4 flex items-start gap-2 rounded-xl border border-primary/30 bg-accent px-4 py-3 text-sm text-accent-foreground">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-primary-deep" />
+            <p>
+              GitHub Pages 미리보기입니다. 등록된 상품 정보로 <strong>데모 콘텐츠</strong>를 생성합니다. 실제 AI 생성·이력 저장은{" "}
+              <strong>Lovable Cloud</strong> 미리보기에서 이용해 주세요.
+            </p>
+          </div>
+        )}
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
           {/* LEFT: inputs */}
